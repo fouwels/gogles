@@ -2,15 +2,13 @@ package main // import "github.com/kaelanfouwels/gogles"
 
 import (
 	"go/build"
-	"image"
-	"image/draw"
 	_ "image/png"
 	"log"
-	"os"
 	"runtime"
 
-	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
+	gl "github.com/kaelanfouwels/gogles/glow/gl"
+	//gl "github.com/kaelanfouwels/gogles/glow/gles"
 )
 
 var (
@@ -45,8 +43,8 @@ func main() {
 		panic(err)
 	}
 
-	texture = newTexture("square.png")
-	defer gl.DeleteTextures(1, &texture)
+	//texture = newTexture("square.png")
+	//defer gl.DeleteTextures(1, &texture)
 
 	setupScene()
 	for !window.ShouldClose() {
@@ -54,44 +52,6 @@ func main() {
 		window.SwapBuffers()
 		glfw.PollEvents()
 	}
-}
-
-func newTexture(file string) uint32 {
-	imgFile, err := os.Open(file)
-	if err != nil {
-		log.Fatalf("texture %q not found on disk: %v\n", file, err)
-	}
-	img, _, err := image.Decode(imgFile)
-	if err != nil {
-		panic(err)
-	}
-
-	rgba := image.NewRGBA(img.Bounds())
-	if rgba.Stride != rgba.Rect.Size().X*4 {
-		panic("unsupported stride")
-	}
-	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
-
-	var texture uint32
-	gl.Enable(gl.TEXTURE_2D)
-	gl.GenTextures(1, &texture)
-	gl.BindTexture(gl.TEXTURE_2D, texture)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-	gl.TexImage2D(
-		gl.TEXTURE_2D,
-		0,
-		gl.RGBA,
-		int32(rgba.Rect.Size().X),
-		int32(rgba.Rect.Size().Y),
-		0,
-		gl.RGBA,
-		gl.UNSIGNED_BYTE,
-		gl.Ptr(rgba.Pix))
-
-	return texture
 }
 
 func setupScene() {
@@ -204,14 +164,7 @@ func drawScene() {
 
 // Set the working directory to the root of Go package, so that its assets can be accessed.
 func init() {
-	dir, err := importPathToDir("github.com/kaelanfouwels/gogles")
-	if err != nil {
-		log.Fatalln("Unable to find Go package in your GOPATH, it's needed to load assets:", err)
-	}
-	err = os.Chdir(dir)
-	if err != nil {
-		log.Panicln("os.Chdir:", err)
-	}
+
 }
 
 // importPathToDir resolves the absolute path from importPath.

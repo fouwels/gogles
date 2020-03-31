@@ -1,0 +1,8 @@
+version: "2"
+services:
+    gogles:
+        image: gogles:dev
+        container_name: gogles
+        build:
+            dockerfile: Dockerfile
+            context: "./"
