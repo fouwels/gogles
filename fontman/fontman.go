@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
+	_ "image/png" // Load png decoder
 	"os"
 
 	gl "github.com/kaelanfouwels/gogles/glow/gl"
@@ -15,27 +16,6 @@ type Fontman struct {
 	font   font
 }
 
-type font struct {
-	File        string
-	Height      int
-	Description struct {
-		Family string
-		Style  string
-		Size   string
-	}
-	Metricts struct {
-		Ascender  int
-		Descender int
-		Height    int
-	}
-	Texture struct {
-		File   string
-		Width  int
-		Height int
-	}
-	Chars []fontChar
-}
-
 func (f *font) LookupFontChar(char rune) (fontChar, error) {
 	// No this is not efficient
 	for _, c := range f.Chars {
@@ -45,43 +25,44 @@ func (f *font) LookupFontChar(char rune) (fontChar, error) {
 		}
 	}
 
-	return fontChar{}, fmt.Errorf("Char %s not found in font index", char)
+	return fontChar{}, fmt.Errorf("Char %v not found in font index", char)
 }
 
 type fontChar struct {
 	Char  rune
 	Width int
-	X     int
-	Y     int
-	W     int
-	H     int
-	OX    int
-	OY    int
+	X     float32
+	Y     float32
+	W     float32
+	H     float32
+	OX    float32
+	OY    float32
 }
 
 //NewFontman Generate a new font manager
 func NewFontman() (*Fontman, error) {
 	fm := Fontman{
-		font: consolas_regular_24,
+		font: consolasRegular24,
 	}
 
-	ffile, err := os.Open(fmt.Sprintf(fm.font.File))
+	filename := fm.font.File
+
+	ffile, err := os.Open(filename)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to load font file %s: %w", filename, err)
 	}
 	img, _, err := image.Decode(ffile)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to decode font file %s: %w", filename, err)
 	}
 
 	rgba := image.NewRGBA(img.Bounds())
 	if rgba.Stride != rgba.Rect.Size().X*4 {
-		return nil, fmt.Errorf("unsupported stride")
+		return nil, fmt.Errorf("unsupported stride in %s", filename)
 	}
 	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
 
 	var textID uint32
-	gl.Enable(gl.TEXTURE_2D)
 	gl.GenTextures(1, &textID)
 	gl.BindTexture(gl.TEXTURE_2D, textID)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
@@ -104,76 +85,40 @@ func NewFontman() (*Fontman, error) {
 }
 
 //RenderChar Render a character
-func (f *Fontman) RenderChar(char rune, centerX int, centerY int) error {
+func (f *Fontman) RenderChar(char rune, x float32, y float32) error {
 
 	fchar, err := f.font.LookupFontChar(char)
 	if err != nil {
 		return err
 	}
 
+	gl.Enable(gl.TEXTURE_2D)
+	gl.TexEnvf(gl.TEXTURE_ENV, gl.TEXTURE_ENV_MODE, gl.MODULATE)
+	gl.BindTexture(gl.TEXTURE_2D, f.textID)
+
 	gl.Begin(gl.QUADS)
+	gl.Color4f(1.0, 1.0, 1.0, 1.0)
 
-	gl.Vertex3f(0, 0, 1)
-	gl.TexCoord2f(0, 0)
-	gl.Vertex3f(-1, -1, 1)
-	gl.TexCoord2f(1, 0)
-	gl.Vertex3f(1, -1, 1)
-	gl.TexCoord2f(1, 1)
-	gl.Vertex3f(1, 1, 1)
-	gl.TexCoord2f(0, 1)
-	gl.Vertex3f(-1, 1, 1)
+	cheight := fchar.Y - fchar.H
+	cwidth := fchar.W - fchar.X
 
-	gl.Normal3f(0, 0, -1)
-	gl.TexCoord2f(1, 0)
-	gl.Vertex3f(-1, -1, -1)
-	gl.TexCoord2f(1, 1)
-	gl.Vertex3f(-1, 1, -1)
-	gl.TexCoord2f(0, 1)
-	gl.Vertex3f(1, 1, -1)
-	gl.TexCoord2f(0, 0)
-	gl.Vertex3f(1, -1, -1)
+	//0,0
+	gl.TexCoord2f(0, fchar.Y)
+	gl.Vertex2f(x, y)
 
-	gl.Normal3f(0, 1, 0)
-	gl.TexCoord2f(0, 1)
-	gl.Vertex3f(-1, 1, -1)
-	gl.TexCoord2f(0, 0)
-	gl.Vertex3f(-1, 1, 1)
-	gl.TexCoord2f(1, 0)
-	gl.Vertex3f(1, 1, 1)
-	gl.TexCoord2f(1, 1)
-	gl.Vertex3f(1, 1, -1)
+	//0,1
+	gl.TexCoord2f(fchar.X, fchar.H)
+	gl.Vertex2f(x, y+cheight)
 
-	gl.Normal3f(0, -1, 0)
-	gl.TexCoord2f(1, 1)
-	gl.Vertex3f(-1, -1, -1)
-	gl.TexCoord2f(0, 1)
-	gl.Vertex3f(1, -1, -1)
-	gl.TexCoord2f(0, 0)
-	gl.Vertex3f(1, -1, 1)
-	gl.TexCoord2f(1, 0)
-	gl.Vertex3f(-1, -1, 1)
+	//1,1
+	gl.TexCoord2f(fchar.W, fchar.H)
+	gl.Vertex2f(x+cwidth, y+cheight)
 
-	gl.Normal3f(1, 0, 0)
-	gl.TexCoord2f(1, 0)
-	gl.Vertex3f(1, -1, -1)
-	gl.TexCoord2f(1, 1)
-	gl.Vertex3f(1, 1, -1)
-	gl.TexCoord2f(0, 1)
-	gl.Vertex3f(1, 1, 1)
-	gl.TexCoord2f(0, 0)
-	gl.Vertex3f(1, -1, 1)
-
-	gl.Normal3f(-1, 0, 0)
-	gl.TexCoord2f(0, 0)
-	gl.Vertex3f(-1, -1, -1)
-	gl.TexCoord2f(1, 0)
-	gl.Vertex3f(-1, -1, 1)
-	gl.TexCoord2f(1, 1)
-	gl.Vertex3f(-1, 1, 1)
-	gl.TexCoord2f(0, 1)
-	gl.Vertex3f(-1, 1, -1)
-
-	gl.Text
+	//1,0
+	gl.TexCoord2f(fchar.W, fchar.Y)
+	gl.Vertex2f(x+cwidth, y+cheight)
 
 	gl.End()
+
+	return nil
 }

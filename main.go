@@ -1,7 +1,9 @@
-package renderman // import "github.com/kaelanfouwels/gogles"
+package main // import "github.com/kaelanfouwels/gogles"
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"runtime"
 
 	"github.com/kaelanfouwels/gogles/fontman"
@@ -22,13 +24,14 @@ func init() {
 func main() {
 	err := start()
 	if err != nil {
-		panic(err)
+		log.Printf("%v", err)
+		os.Exit(1)
 	}
 }
 
 func start() error {
 	if err := glfw.Init(); err != nil {
-		panic(fmt.Sprintf("failed to initialize glfw: %s", err))
+		return fmt.Errorf("failed to initialize glfw: %w", err)
 	}
 	defer glfw.Terminate()
 
@@ -51,7 +54,10 @@ func start() error {
 		return err
 	}
 
-	renderman := renderman.NewRenderman(width, height, &fontman)
+	renderman, err := renderman.NewRenderman(width, height, fontman)
+	if err != nil {
+		return err
+	}
 	defer renderman.Destroy()
 
 	for !window.ShouldClose() {
@@ -59,4 +65,6 @@ func start() error {
 		window.SwapBuffers()
 		glfw.PollEvents()
 	}
+
+	return nil
 }
