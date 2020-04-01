@@ -1,59 +1,113 @@
 package renderman
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/kaelanfouwels/gogles/fontman"
 	gl "github.com/kaelanfouwels/gogles/glow/gl"
 )
 
+const assetsDir string = "assets/"
+
 //RenderMan ..
 type RenderMan struct {
-	fontMan *fontman.FontMan
-	width   int
-	height  int
+	fontman   *fontman.Fontman
+	width     float32
+	height    float32
+	textCache map[string]Texture
 }
 
 //NewRenderman ..
-func NewRenderman(width int, height int, fontman *fontman.Fontman) *RenderMan {
+func NewRenderman(width float32, height float32, fontman *fontman.Fontman) (*RenderMan, error) {
 
-	rm := &RenderMan{
-		width:   width,
-		height:  height,
-		fontman: fontman,
+	rm := RenderMan{
+		width:     width,
+		height:    height,
+		fontman:   fontman,
+		textCache: map[string]Texture{},
 	}
 
-	gl.Enable(gl.DEPTH_TEST)
-	gl.Enable(gl.LIGHTING)
+	rm.initialize()
 
-	gl.ClearColor(0.5, 0.5, 0.5, 0.0)
-	gl.ClearDepth(1)
-	gl.DepthFunc(gl.LEQUAL)
+	textures := []string{
+		"t_square",
+		"t_background",
+	}
 
-	ambient := []float32{0.5, 0.5, 0.5, 1}
-	diffuse := []float32{1, 1, 1, 1}
-	lightPosition := []float32{-5, 5, 10, 0}
-	gl.Lightfv(gl.LIGHT0, gl.AMBIENT, &ambient[0])
-	gl.Lightfv(gl.LIGHT0, gl.DIFFUSE, &diffuse[0])
-	gl.Lightfv(gl.LIGHT0, gl.POSITION, &lightPosition[0])
-	gl.Enable(gl.LIGHT0)
+	for _, v := range textures {
+		f, err := os.Open(fmt.Sprintf("%v/%v.png", assetsDir, v))
+		if err != nil {
+			return nil, fmt.Errorf("Failed to open %v: %w", v, err)
+		}
 
-	gl.MatrixMode(gl.PROJECTION)
-	gl.LoadIdentity()
-	f := ((float64(width) / float64(height)) - 1) / 2
-	gl.Frustum(-1-f, 1+f, -1, 1, 1.0, 10.0)
-	gl.MatrixMode(gl.MODELVIEW)
-	gl.LoadIdentity()
+		text, err := loadTexture(f)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to load %v: %w", v, err)
+		}
+		rm.textCache[v] = text
+	}
 
-	return
+	return &rm, nil
 }
 
 //Destroy ..
 func (r *RenderMan) Destroy() {
+	for _, v := range r.textCache {
+		gl.DeleteTextures(1, &v.ID)
+	}
+}
 
+func (r *RenderMan) initialize() {
+	gl.ClearColor(0.0, 0.0, 0.0, 0.0)
+	gl.ShadeModel(gl.FLAT)
+	gl.Enable(gl.DEPTH_TEST)
+	gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)
+
+	gl.MatrixMode(gl.PROJECTION)
+	gl.LoadIdentity()
+	gl.Ortho(-float64(r.width)/2, float64(r.width)/2, -float64(r.height)/2, float64(r.height)/2, 0, 1)
+	gl.MatrixMode(gl.MODELVIEW)
+	gl.LoadIdentity()
 }
 
 // Draw ..
 func (r *RenderMan) Draw() {
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-	r.fontMan.RenderChar('F', r.width/2, r.height/2)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	//r.drawBackground()
+	r.drawForeground()
+	r.drawOverlay()
+}
+
+func (r *RenderMan) drawBackground() {
+
+	gl.Enable(gl.TEXTURE_2D)
+	gl.TexEnvf(gl.TEXTURE_ENV, gl.TEXTURE_ENV_MODE, gl.REPLACE)
+	gl.BindTexture(gl.TEXTURE_2D, r.textCache["t_square"].ID)
+
+	gl.Begin(gl.QUADS)
+	gl.Color3f(1.0, 1.0, 1.0)
+
+	gl.TexCoord2f(0, 0)
+	gl.Vertex2f(-r.width/2, -r.height/2)
+
+	gl.TexCoord2f(0, 1)
+	gl.Vertex2f(-r.width/2, r.height/2)
+
+	gl.TexCoord2f(1, 1)
+	gl.Vertex2f(r.width/2, r.height/2)
+
+	gl.TexCoord2f(1, 0)
+	gl.Vertex2f(r.width/2, -r.height/2)
+
+	gl.End()
+}
+
+func (r *RenderMan) drawForeground() {
+
+}
+
+func (r *RenderMan) drawOverlay() {
+	r.fontman.RenderChar('F', 0, 0)
 }
