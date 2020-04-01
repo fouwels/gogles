@@ -8,7 +8,7 @@ import (
 //MFDIndex defines an MFD index
 type MFDIndex int
 
-const mfdWidth float32 = 100
+const mfdWidth float32 = 80
 const mfdHeight float32 = 80
 const mfdYOffset float32 = 60
 const mfdXOffset float32 = 20
