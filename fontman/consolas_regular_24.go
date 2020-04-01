@@ -1,7 +1,6 @@
 package fontman
 
 var consolasRegular24 font = font{
-	File:   "assets/consolas_regular_24.png",
 	Height: 37,
 	Description: fontDescription{
 		Family: "Consolas",
@@ -14,7 +13,7 @@ var consolasRegular24 font = font{
 		Height:    37,
 	},
 	Texture: fontTexture{
-		File:   "consolas_regular_24.png",
+		Name:   "t_consolas_regular_24",
 		Width:  256,
 		Height: 256,
 	},

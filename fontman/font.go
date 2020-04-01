@@ -1,12 +1,12 @@
 package fontman
 
 type font struct {
-	File        string
 	Height      int
 	Description fontDescription
 	Metricts    fontMetrics
 	Texture     fontTexture
 	Chars       []fontChar
+	GLTextureID uint32
 }
 
 type fontDescription struct {
@@ -16,7 +16,7 @@ type fontDescription struct {
 }
 
 type fontTexture struct {
-	File   string
+	Name   string
 	Width  int
 	Height int
 }

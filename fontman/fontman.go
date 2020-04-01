@@ -2,18 +2,16 @@ package fontman
 
 import (
 	"fmt"
-	"image"
-	"image/draw"
 	_ "image/png" // Load png decoder
-	"os"
 
 	gl "github.com/kaelanfouwels/gogles/glow/gl"
+	"github.com/kaelanfouwels/gogles/textman"
 )
 
 //Fontman Font Manager
 type Fontman struct {
-	textID uint32
-	font   font
+	textman *textman.Textman
+	font    font
 }
 
 func (f *font) LookupFontChar(char rune) (fontChar, error) {
@@ -40,47 +38,12 @@ type fontChar struct {
 }
 
 //NewFontman Generate a new font manager
-func NewFontman() (*Fontman, error) {
+func NewFontman(textman *textman.Textman) (*Fontman, error) {
 	fm := Fontman{
-		font: consolasRegular24,
+		font:    consolasRegular24,
+		textman: textman,
 	}
 
-	filename := fm.font.File
-
-	ffile, err := os.Open(filename)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to load font file %s: %w", filename, err)
-	}
-	img, _, err := image.Decode(ffile)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to decode font file %s: %w", filename, err)
-	}
-
-	rgba := image.NewRGBA(img.Bounds())
-	if rgba.Stride != rgba.Rect.Size().X*4 {
-		return nil, fmt.Errorf("unsupported stride in %s", filename)
-	}
-	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
-
-	var textID uint32
-	gl.GenTextures(1, &textID)
-	gl.BindTexture(gl.TEXTURE_2D, textID)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.LINEAR)
-	gl.TexImage2D(
-		gl.TEXTURE_2D,
-		0,
-		gl.RGBA,
-		int32(rgba.Rect.Size().X),
-		int32(rgba.Rect.Size().Y),
-		0,
-		gl.RGBA,
-		gl.UNSIGNED_BYTE,
-		gl.Ptr(rgba.Pix))
-
-	fm.textID = textID
 	return &fm, nil
 }
 
@@ -92,33 +55,38 @@ func (f *Fontman) RenderChar(char rune, x float32, y float32) error {
 		return err
 	}
 
+	_ = fchar
+
+	ftext, err := f.textman.GetText(f.font.Texture.Name)
+	if err != nil {
+		return err
+	}
+
 	gl.Enable(gl.TEXTURE_2D)
-	gl.TexEnvf(gl.TEXTURE_ENV, gl.TEXTURE_ENV_MODE, gl.MODULATE)
-	gl.BindTexture(gl.TEXTURE_2D, f.textID)
+	gl.TexEnvf(gl.TEXTURE_ENV, gl.TEXTURE_ENV_MODE, gl.REPLACE)
+	gl.BindTexture(gl.TEXTURE_2D, ftext.ID)
 
 	gl.Begin(gl.QUADS)
-	gl.Color4f(1.0, 1.0, 1.0, 1.0)
-
-	cheight := fchar.Y - fchar.H
-	cwidth := fchar.W - fchar.X
+	gl.Color3f(1.0, 1.0, 1.0)
 
 	//0,0
-	gl.TexCoord2f(0, fchar.Y)
-	gl.Vertex2f(x, y)
+	gl.TexCoord2f(0, 0)
+	gl.Vertex2f(-256/2, -256/2)
 
 	//0,1
-	gl.TexCoord2f(fchar.X, fchar.H)
-	gl.Vertex2f(x, y+cheight)
+	gl.TexCoord2f(0, 1)
+	gl.Vertex2f(-256/2, 256/2)
 
 	//1,1
-	gl.TexCoord2f(fchar.W, fchar.H)
-	gl.Vertex2f(x+cwidth, y+cheight)
+	gl.TexCoord2f(1, 1)
+	gl.Vertex2f(256/2, 256/2)
 
 	//1,0
-	gl.TexCoord2f(fchar.W, fchar.Y)
-	gl.Vertex2f(x+cwidth, y+cheight)
+	gl.TexCoord2f(1, 0)
+	gl.Vertex2f(256/2, -256/2)
 
 	gl.End()
+	gl.PopMatrix()
 
 	return nil
 }

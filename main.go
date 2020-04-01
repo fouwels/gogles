@@ -7,6 +7,7 @@ import (
 	"runtime"
 
 	"github.com/kaelanfouwels/gogles/fontman"
+	"github.com/kaelanfouwels/gogles/textman"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
 	gl "github.com/kaelanfouwels/gogles/glow/gl"
@@ -49,12 +50,18 @@ func start() error {
 		return err
 	}
 
-	fontman, err := fontman.NewFontman()
+	textman, err := textman.NewTextman("./assets")
+	if err != nil {
+		return err
+	}
+	defer textman.Destroy()
+
+	fontman, err := fontman.NewFontman(textman)
 	if err != nil {
 		return err
 	}
 
-	renderman, err := renderman.NewRenderman(width, height, fontman)
+	renderman, err := renderman.NewRenderman(width, height, textman, fontman)
 	if err != nil {
 		return err
 	}
