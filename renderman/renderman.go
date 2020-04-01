@@ -37,7 +37,7 @@ func (r *RenderMan) Destroy() {
 }
 
 func (r *RenderMan) initialize() {
-	gl.ClearColor(0.0, 0.0, 0.0, 0.0)
+	gl.ClearColor(0, 0, 0, 0)
 	gl.ShadeModel(gl.FLAT)
 	gl.Enable(gl.DEPTH_TEST)
 	gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)
@@ -50,47 +50,81 @@ func (r *RenderMan) initialize() {
 }
 
 // Draw ..
-func (r *RenderMan) Draw() {
+func (r *RenderMan) Draw() error {
 
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	r.drawBackground()
-	r.drawForeground()
-	r.drawOverlay()
+	gl.LoadIdentity()
+
+	err := r.drawBackground()
+	if err != nil {
+		return err
+	}
+	err = r.drawForeground()
+	if err != nil {
+		return err
+	}
+	err = r.drawOverlay()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (r *RenderMan) drawBackground() {
+func (r *RenderMan) drawBackground() error {
 
-	// text, err := r.textman.GetText("t_square")
-	// if err != nil {
-	// 	panic(err)
-	// }
+	text, err := r.textman.GetText("t_square")
+	if err != nil {
+		return err
+	}
 
-	// gl.Enable(gl.TEXTURE_2D)
-	// gl.TexEnvf(gl.TEXTURE_ENV, gl.TEXTURE_ENV_MODE, gl.REPLACE)
-	// gl.BindTexture(gl.TEXTURE_2D, text.ID)
+	gl.Enable(gl.TEXTURE_2D)
+	gl.TexEnvf(gl.TEXTURE_ENV, gl.TEXTURE_ENV_MODE, gl.REPLACE)
+	gl.BindTexture(gl.TEXTURE_2D, text.ID)
 
-	// gl.Begin(gl.QUADS)
-	// gl.Color3f(1.0, 1.0, 1.0)
+	gl.MatrixMode(gl.TEXTURE)
+	gl.LoadIdentity()
 
-	// gl.TexCoord2f(0, 0)
-	// gl.Vertex2f(-r.width/2, -r.height/2)
+	gl.MatrixMode(gl.MODELVIEW)
+	gl.LoadIdentity()
+	gl.Translatef(-200, -50, 0)
+	gl.Rotatef(45, 0, 0, 1)
+	gl.Scalef(100, 100, 0)
 
-	// gl.TexCoord2f(0, 1)
-	// gl.Vertex2f(-r.width/2, r.height/2)
+	gl.Begin(gl.QUADS)
+	gl.Color3f(1.0, 1.0, 1.0)
 
-	// gl.TexCoord2f(1, 1)
-	// gl.Vertex2f(r.width/2, r.height/2)
+	gl.TexCoord2f(0, 0)
+	gl.Vertex2f(0, 0)
 
-	// gl.TexCoord2f(1, 0)
-	// gl.Vertex2f(r.width/2, -r.height/2)
+	gl.TexCoord2f(0, 1)
+	gl.Vertex2f(0, 1)
 
-	// gl.End()
+	gl.TexCoord2f(1, 1)
+	gl.Vertex2f(1, 1)
+
+	gl.TexCoord2f(1, 0)
+	gl.Vertex2f(1, 0)
+
+	gl.End()
+
+	return nil
 }
 
-func (r *RenderMan) drawForeground() {
-
+func (r *RenderMan) drawForeground() error {
+	return nil
 }
 
-func (r *RenderMan) drawOverlay() {
-	r.fontman.RenderChar('F', 0, 0)
+func (r *RenderMan) drawOverlay() error {
+
+	err := r.fontman.RenderChar('M', 0, 0, 1)
+	if err != nil {
+		return err
+	}
+	err = r.fontman.RenderString("Fouwels", 0, -100, 0.25)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
