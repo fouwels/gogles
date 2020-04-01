@@ -1,4 +1,4 @@
-package renderman
+package textman
 
 import (
 	"fmt"
@@ -6,15 +6,70 @@ import (
 	"image/draw"
 	_ "image/png" // Load png decoder
 	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
 
 	gl "github.com/kaelanfouwels/gogles/glow/gl"
 )
+
+//Textman Texture Manager
+type Textman struct {
+	textCache map[string]Texture
+}
 
 //Texture ..
 type Texture struct {
 	Width  int
 	Height int
 	ID     uint32
+}
+
+//NewTextman ..
+func NewTextman(textFolder string) (*Textman, error) {
+
+	tman := Textman{
+		textCache: map[string]Texture{},
+	}
+
+	files, err := ioutil.ReadDir(textFolder)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to enumerate textFolder %v: %w", textFolder, err)
+	}
+
+	for _, f := range files {
+
+		file, err := os.Open(fmt.Sprintf("%v/%v", textFolder, f.Name()))
+		if err != nil {
+			return nil, fmt.Errorf("Failed to open texture %v: %w", f, err)
+		}
+		text, err := loadTexture(file)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to load texture %v: %w", f, err)
+		}
+
+		extension := filepath.Ext(f.Name())
+		tman.textCache[strings.TrimSuffix(f.Name(), extension)] = text
+	}
+
+	return &tman, nil
+}
+
+//GetText ...
+func (t *Textman) GetText(textName string) (Texture, error) {
+
+	if text, ok := t.textCache[textName]; ok {
+		return text, nil
+	}
+	return Texture{}, fmt.Errorf("Texture %s not present in texture cache", textName)
+}
+
+//Destroy ..
+func (t *Textman) Destroy() {
+	for _, v := range t.textCache {
+		gl.DeleteTextures(1, &v.ID)
+	}
 }
 
 func loadTexture(reader io.Reader) (Texture, error) {
