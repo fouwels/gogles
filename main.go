@@ -68,7 +68,10 @@ func start() error {
 	defer renderman.Destroy()
 
 	for !window.ShouldClose() {
-		renderman.Draw()
+		err := renderman.Draw()
+		if err != nil {
+			return fmt.Errorf("Draw cycle failed: %w", err)
+		}
 		window.SwapBuffers()
 		glfw.PollEvents()
 	}
