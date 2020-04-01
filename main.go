@@ -5,6 +5,9 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"time"
+
+	"github.com/kaelanfouwels/gogles/mfdman"
 
 	"github.com/kaelanfouwels/gogles/fontman"
 	"github.com/kaelanfouwels/gogles/textman"
@@ -61,20 +64,56 @@ func start() error {
 		return err
 	}
 
-	renderman, err := renderman.NewRenderman(width, height, textman, fontman)
+	mfdman, err := mfdman.NewMFDman(width, height, fontman)
+	if err != nil {
+		return err
+	}
+
+	renderman, err := renderman.NewRenderman(width, height, textman, fontman, mfdman)
 	if err != nil {
 		return err
 	}
 	defer renderman.Destroy()
 
+	go simulatedMFD(mfdman)
+
+	ticks := 0
 	for !window.ShouldClose() {
+
 		err := renderman.Draw()
 		if err != nil {
 			return fmt.Errorf("Draw cycle failed: %w", err)
 		}
+		err = fontman.RenderString(fmt.Sprintf("Healthkeeper v0.1: %v", ticks), -width/2+20, -height/2+20, 0.10)
+		if err != nil {
+			return err
+		}
 		window.SwapBuffers()
 		glfw.PollEvents()
+		ticks++
+		time.Sleep(10 * time.Millisecond)
+
 	}
 
 	return nil
+}
+
+func simulatedMFD(mman *mfdman.MFDman) {
+
+	mman.SetText(mfdman.L4, "-", "FLOW")
+	mman.SetText(mfdman.R4, "+", "FLOW")
+	mman.SetText(mfdman.L3, "-", "O2")
+	mman.SetText(mfdman.R3, "+", "O2")
+
+	mman.SetText(mfdman.R1, "MENU", "MENU")
+
+	for true {
+
+		for i := mfdman.L1; i < mfdman.MFDCount; i++ {
+			time.Sleep(500 * time.Millisecond)
+			mman.SetSelected(i, !mman.GetSelected(i))
+			time.Sleep(500 * time.Millisecond)
+			mman.SetSelected(i, !mman.GetSelected(i))
+		}
+	}
 }

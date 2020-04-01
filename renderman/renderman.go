@@ -3,6 +3,7 @@ package renderman
 import (
 	"github.com/kaelanfouwels/gogles/fontman"
 	gl "github.com/kaelanfouwels/gogles/glow/gl"
+	"github.com/kaelanfouwels/gogles/mfdman"
 	"github.com/kaelanfouwels/gogles/textman"
 )
 
@@ -12,18 +13,20 @@ const assetsDir string = "assets/"
 type RenderMan struct {
 	textman *textman.Textman
 	fontman *fontman.Fontman
+	mfdman  *mfdman.MFDman
 	width   float32
 	height  float32
 }
 
 //NewRenderman ..
-func NewRenderman(width float32, height float32, textman *textman.Textman, fontman *fontman.Fontman) (*RenderMan, error) {
+func NewRenderman(width float32, height float32, textman *textman.Textman, fontman *fontman.Fontman, mfdman *mfdman.MFDman) (*RenderMan, error) {
 
 	rm := RenderMan{
 		width:   width,
 		height:  height,
 		textman: textman,
 		fontman: fontman,
+		mfdman:  mfdman,
 	}
 
 	rm.initialize()
@@ -63,13 +66,15 @@ func (r *RenderMan) Draw() error {
 	if err != nil {
 		return err
 	}
-	err = r.drawOverlay()
+	err = r.mfdman.Draw()
 	if err != nil {
 		return err
 	}
 
 	return nil
 }
+
+var testCounter float32 = 0
 
 func (r *RenderMan) drawBackground() error {
 
@@ -79,6 +84,7 @@ func (r *RenderMan) drawBackground() error {
 	}
 
 	gl.Enable(gl.TEXTURE_2D)
+	gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 	gl.TexEnvf(gl.TEXTURE_ENV, gl.TEXTURE_ENV_MODE, gl.REPLACE)
 	gl.BindTexture(gl.TEXTURE_2D, text.ID)
 
@@ -87,8 +93,8 @@ func (r *RenderMan) drawBackground() error {
 
 	gl.MatrixMode(gl.MODELVIEW)
 	gl.LoadIdentity()
-	gl.Translatef(-200, -50, 0)
-	gl.Rotatef(45, 0, 0, 1)
+	gl.Translatef(0, 0, 0)
+	gl.Rotatef(testCounter, 0, 0, 1)
 	gl.Scalef(100, 100, 0)
 
 	gl.Begin(gl.QUADS)
@@ -108,23 +114,11 @@ func (r *RenderMan) drawBackground() error {
 
 	gl.End()
 
+	testCounter++
 	return nil
 }
 
 func (r *RenderMan) drawForeground() error {
-	return nil
-}
-
-func (r *RenderMan) drawOverlay() error {
-
-	err := r.fontman.RenderChar('M', 0, 0, 1)
-	if err != nil {
-		return err
-	}
-	err = r.fontman.RenderString("Fouwels", 0, -100, 0.25)
-	if err != nil {
-		return err
-	}
 
 	return nil
 }

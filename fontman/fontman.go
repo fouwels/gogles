@@ -50,7 +50,7 @@ func NewFontman(textman *textman.Textman) (*Fontman, error) {
 //RenderString ..
 func (f *Fontman) RenderString(text string, x float32, y float32, scaling float32) error {
 
-	const kerning float32 = 10
+	const kerning float32 = 3
 
 	rs := []rune(text)
 
@@ -68,7 +68,7 @@ func (f *Fontman) RenderString(text string, x float32, y float32, scaling float3
 			return err
 		}
 
-		xCursor += float32(fchar.W) + kerning
+		xCursor += float32(fchar.W)*scaling + kerning
 	}
 
 	return nil
@@ -90,6 +90,7 @@ func (f *Fontman) RenderChar(char rune, x float32, y float32, scaling float32) e
 	}
 
 	gl.Enable(gl.TEXTURE_2D)
+	gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 	gl.TexEnvf(gl.TEXTURE_ENV, gl.TEXTURE_ENV_MODE, gl.MODULATE)
 	gl.BindTexture(gl.TEXTURE_2D, ftext.ID)
 
@@ -99,6 +100,7 @@ func (f *Fontman) RenderChar(char rune, x float32, y float32, scaling float32) e
 
 	gl.MatrixMode(gl.MODELVIEW)
 	gl.LoadIdentity()
+	gl.Translatef(x, y, 0)
 	gl.Scalef(scaling, scaling, 0)
 
 	gl.Begin(gl.QUADS)
@@ -107,19 +109,19 @@ func (f *Fontman) RenderChar(char rune, x float32, y float32, scaling float32) e
 	hoff := fchar.H
 	//0,0
 	gl.TexCoord2f(fchar.X, fchar.Y)
-	gl.Vertex2f(x, y+hoff)
+	gl.Vertex2f(0, 0+hoff)
 
 	//0,1
 	gl.TexCoord2f(fchar.X, fchar.Y+hoff)
-	gl.Vertex2f(x, y)
+	gl.Vertex2f(0, 0)
 
 	//1,1
 	gl.TexCoord2f(fchar.X+woff, fchar.Y+hoff)
-	gl.Vertex2f(x+woff, y)
+	gl.Vertex2f(0+woff, 0)
 
 	//1,0
 	gl.TexCoord2f(fchar.X+woff, fchar.Y)
-	gl.Vertex2f(x+woff, y+hoff)
+	gl.Vertex2f(0+woff, 0+hoff)
 
 	gl.End()
 
