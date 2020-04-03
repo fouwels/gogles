@@ -12,7 +12,7 @@ import (
 	"github.com/kaelanfouwels/gogles/fontman"
 	"github.com/kaelanfouwels/gogles/textman"
 
-	"github.com/kaelanfouwels/gogles/glfw/v3.3/glfw"
+	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/kaelanfouwels/gogles/glow/gl"
 
 	//gl "github.com/kaelanfouwels/gogles/glow/gles"
