@@ -3,7 +3,7 @@ BUILDFILE=build.yml
 DOCKER=docker
 
 init:
-	./setup/generate-opengl.sh
+	cd ./setup && ./generate-opengl.sh
 	
 #Docker
 build: Dockerfile install
