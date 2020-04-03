@@ -3,7 +3,7 @@
 GLOWDIR="$PWD/../glow"
 
 # Get and build GLFW
-go get -u -tags=gl github.com/go-gl/glfw/v3.3/glfw # OpenGL Mode
+go get -u -tags=GLFW_OSMESA github.com/go-gl/glfw/v3.3/glfw # OpenGL Mode
 #go get -u -tags=gles1 github.com/go-gl/glfw/v3.3/glfw # OpenGL ES Mode
 
 # Generate OpenGL bindings
