@@ -64,8 +64,8 @@ func NewMFDman(width float32, height float32, fontman *fontman.Fontman) (*MFDman
 	for i := 0; i < int(MFDCount/2); i++ {
 		mfdm.mfds[i].y = ycursor
 		mfdm.mfds[i].x = -width/2 + mfdXOffset
-		mfdm.mfds[i].textA = "UNSET"
-		mfdm.mfds[i].textB = "UNSET"
+		mfdm.mfds[i].textA = ""
+		mfdm.mfds[i].textB = ""
 		mfdm.mfds[i].selected = false
 		ycursor += mfdHeight
 		ycursor += mfdYOffset
@@ -75,8 +75,8 @@ func NewMFDman(width float32, height float32, fontman *fontman.Fontman) (*MFDman
 	for i := int(MFDCount / 2); i < int(MFDCount); i++ {
 		mfdm.mfds[i].y = ycursor
 		mfdm.mfds[i].x = width/2 - mfdWidth - mfdXOffset
-		mfdm.mfds[i].textA = "UNSET"
-		mfdm.mfds[i].textB = "UNSET"
+		mfdm.mfds[i].textA = ""
+		mfdm.mfds[i].textB = ""
 		mfdm.mfds[i].selected = false
 		ycursor += mfdHeight
 		ycursor += mfdYOffset
@@ -100,6 +100,9 @@ func (m *MFDman) Draw() error {
 
 func (m *MFDman) drawOne(mfd mfd) error {
 
+	if mfd.textA == "" && mfd.textB == "" {
+		return nil
+	}
 	gl.MatrixMode(gl.TEXTURE)
 	gl.LoadIdentity()
 	gl.MatrixMode(gl.MODELVIEW)
