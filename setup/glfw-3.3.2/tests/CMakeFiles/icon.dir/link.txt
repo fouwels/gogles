@@ -1,0 +1,1 @@
+/Library/Developer/CommandLineTools/usr/bin/cc  -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/icon.dir/icon.c.o CMakeFiles/icon.dir/__/deps/glad_gl.c.o  -o icon.app/Contents/MacOS/icon -Wl,-rpath,/Users/kf/go/src/github.com/kaelanfouwels/gogles/setup/glfw-3.3.2/src ../src/libglfw.3.3.dylib 

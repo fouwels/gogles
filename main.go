@@ -12,10 +12,11 @@ import (
 	"github.com/kaelanfouwels/gogles/fontman"
 	"github.com/kaelanfouwels/gogles/textman"
 
-	"github.com/go-gl/glfw/v3.3/glfw"
-	gl "github.com/kaelanfouwels/gogles/glow/gl"
-	"github.com/kaelanfouwels/gogles/renderman"
+	"github.com/kaelanfouwels/gogles/glfw/v3.3/glfw"
+	"github.com/kaelanfouwels/gogles/glow/gl"
+
 	//gl "github.com/kaelanfouwels/gogles/glow/gles"
+	"github.com/kaelanfouwels/gogles/renderman"
 )
 
 const width, height = 800, 600
