@@ -26,6 +26,8 @@ const processLoopTime = (1 * time.Second) / 120 // 120 Hz
 
 func init() {
 	// GLFW event handling must run on the main OS thread
+	logf("init", "Locking to OS Thread")
+	runtime.LockOSThread()
 }
 
 func main() {
@@ -74,9 +76,6 @@ func watchdog(process <-chan error) {
 }
 
 func glLoop(ticker <-chan time.Time) error {
-
-	logf("glloop", "Locking to OS Thread")
-	runtime.LockOSThread()
 
 	logf("glloop", "Initializing GLFW")
 	if err := glfw.Init(); err != nil {
