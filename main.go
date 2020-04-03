@@ -20,7 +20,7 @@ import (
 	"github.com/kaelanfouwels/gogles/renderman"
 )
 
-const width, height = 800, 600
+const width, height = 800, 480
 
 func init() {
 	// GLFW event handling must run on the main OS thread
