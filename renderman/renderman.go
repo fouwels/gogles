@@ -3,6 +3,7 @@ package renderman
 import (
 	"github.com/kaelanfouwels/gogles/fontman"
 	gl "github.com/kaelanfouwels/gogles/glow/gl"
+	"github.com/kaelanfouwels/gogles/ioman"
 	"github.com/kaelanfouwels/gogles/mfdman"
 	"github.com/kaelanfouwels/gogles/textman"
 )
@@ -14,12 +15,13 @@ type RenderMan struct {
 	textman *textman.Textman
 	fontman *fontman.Fontman
 	mfdman  *mfdman.MFDman
+	ioman   *ioman.IOMan
 	width   float32
 	height  float32
 }
 
 //NewRenderman ..
-func NewRenderman(width float32, height float32, textman *textman.Textman, fontman *fontman.Fontman, mfdman *mfdman.MFDman) (*RenderMan, error) {
+func NewRenderman(width float32, height float32, textman *textman.Textman, fontman *fontman.Fontman, mfdman *mfdman.MFDman, ioman *ioman.IOMan) (*RenderMan, error) {
 
 	rm := RenderMan{
 		width:   width,
@@ -27,6 +29,7 @@ func NewRenderman(width float32, height float32, textman *textman.Textman, fontm
 		textman: textman,
 		fontman: fontman,
 		mfdman:  mfdman,
+		ioman:   ioman,
 	}
 
 	rm.initialize()
