@@ -58,15 +58,15 @@ func start() error {
 	defer ioman.Destroy()
 
 	chioerr := make(chan error)
-	logf("start", "Starting watchdog")
+	logf("start", "Starting watchdog goroutine")
 	go watchdog(chioerr)
 
-	logf("start", "Starting ioman")
+	logf("start", "Starting ioman goroutine")
 	go ioman.Start(chioerr)
 
 	if !*flagNoGui {
 
-		logf("start", "Handing over to graphics (glloop) at %v hz", 1/_glLoopTime.Seconds())
+		logf("start", "Handing over to graphics at %v hz", 1/_glLoopTime.Seconds())
 		gltick := time.NewTicker(_glLoopTime)
 		defer gltick.Stop()
 
@@ -76,7 +76,7 @@ func start() error {
 		}
 
 	} else {
-		logf("start", "Running in headless mode, handing over to CLI (cliloop)")
+		logf("start", "Running in headless mode, handing over to cli at 1Hz")
 
 		cltick := time.NewTicker(1 * time.Second)
 		defer cltick.Stop()
