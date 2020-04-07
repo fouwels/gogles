@@ -85,15 +85,12 @@ func (i *IOMan) Start(cherr chan<- error) {
 	logf("ioman", "Starting io loop at %v Hz", 1/_ioLoopTime.Seconds())
 
 	for range lt.C {
-		sfmval, _, err := i.sfm.GetValue()
-		if err != nil {
-			cherr <- err
-			return
-		}
+		flowVal, _, flowErr := i.sfm.GetValue()
 
 		i.Lock()
-		i.data.Flow = sfmval
-		i.data.Valid = true
+		i.data.Flow = flowVal
+		i.data.FlowErr = flowErr
+		i.data.Valid = flowErr == nil
 		i.Unlock()
 	}
 
