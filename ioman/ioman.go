@@ -82,8 +82,6 @@ func (i *IOMan) Start(cherr chan<- error) {
 	lt := time.NewTicker(_ioLoopTime)
 	defer lt.Stop()
 
-	logf("ioman", "Starting io loop at %v Hz", 1/_ioLoopTime.Seconds())
-
 	for range lt.C {
 		flowVal, _, flowErr := i.sfm.GetValue()
 
