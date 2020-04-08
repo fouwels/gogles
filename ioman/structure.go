@@ -20,8 +20,8 @@ type Sensors struct {
 //Flow ..
 type Flow struct {
 	Val float32
-	Err error
 	CRC uint8
+	Err error
 }
 
 //Calculated ..
@@ -42,7 +42,7 @@ func (e enumState) String() string {
 	case 2:
 		return "Breathing Out"
 	case 3:
-		return "At Rest"
+		return "Rest"
 	default:
 		return "Enum Error"
 	}
@@ -67,7 +67,8 @@ type Stats struct {
 
 type internalPacket struct {
 	lastState        enumState
-	lastStateChange  time.Time
+	lastStateChangeN  time.Time
+	lastStateChangeNmin1  time.Time
 	flowAverageTotal float64
 	flowAverageN     uint64
 }

@@ -13,17 +13,15 @@ import (
 const _sfm3000Address = 0x40
 const _sfm3000IsAir = false
 const _i2cBus = 1
-const _ioLoopTime = 10 * time.Millisecond
+const _ioLoopTime = 1 * time.Millisecond
 
-const _breathInFlowThreshold = 0.5
-const _breathOutFlowThreshold = -0.5
+const _breathInFlowThreshold = 20
+const _breathOutFlowThreshold = -20
 
 //IOMan ..
 type IOMan struct {
 	flow1    *sfm3000.SFM3000
-	d        DataPacket
-	i        internalPacket
-	outputs  DataPacket
+	o  DataPacket //Output data variables - external buffer. DataPacket is copied from working buffer to output buffer at end of io cycle.
 	moutputs sync.Mutex
 }
 
@@ -36,7 +34,7 @@ func NewIOMan() (*IOMan, error) {
 	return &iom, nil
 }
 
-func (i *IOMan) initialize() error {
+func (io *IOMan) initialize() error {
 
 	//Initialize I2C
 	logf("ioman", "Initializing I2C on bus %v", _i2cBus)
@@ -75,100 +73,124 @@ func (i *IOMan) initialize() error {
 		return fmt.Errorf("Failed to get %v value: %w", flow1.Label(), err)
 	}
 	logf("ioman", "%v flow value OK: %v crc %v", flow1.Label(), value, crc)
-	i.flow1 = flow1
+	io.flow1 = flow1
 	logf("ioman", "All sensors initialized")
 
 	return nil
 }
 
 //Start ..
-func (i *IOMan) Start(cherr chan<- error) {
+func (io *IOMan) Start(cherr chan<- error) {
 	logf("ioman", "Starting at %v hz", 1/_ioLoopTime.Seconds())
 	lt := time.NewTicker(_ioLoopTime)
 	defer lt.Stop()
 
+	i  :=   internalPacket{} //Internal data variables
+
 	for range lt.C {
 
+		d := DataPacket{}
+
 		// Read inputs
-		i.d.Sensors.Flow.Val, i.d.Sensors.Flow.CRC, i.d.Sensors.Flow.Err = i.flow1.GetValue()
-		i.d.Timestamp = time.Now()
+		fval, fcrc, ferr := io.flow1.GetValue()
+		flow := Flow{
+			Val: fval,
+			CRC: fcrc,
+			Err: ferr,
+		} 
+
+		d.Sensors = Sensors {
+			Flow: flow,
+		}
+		d.Timestamp = time.Now()
 
 		// If inputs read ok
-		if i.d.Sensors.Flow.Err == nil {
-			i.d.Stats.OkReads++
+		if d.Sensors.Flow.Err == nil {
+			d.Stats.OkReads++
 
-			i.states()
-			i.calculate()
-			i.d.Valid = true
+			io.states(&d, &i)
+			io.calculate(&d, &i)
+			d.Valid = true
 
 		} else {
-			i.d.Stats.FailedReads++
+			d.Stats.FailedReads++
 
-			i.d.Valid = false
+			d.Valid = false
 		}
 
 		// Copy to output registers
-		i.moutputs.Lock()
-		i.outputs = i.d
-		i.moutputs.Unlock()
+		io.moutputs.Lock()
+		io.o = d
+		io.moutputs.Unlock()
 	}
 
 	cherr <- fmt.Errorf("io loop ended unexpectedly")
 }
 
-func (i *IOMan) states() {
-	breathin := i.d.Sensors.Flow.Val > _breathInFlowThreshold
-	breathout := i.d.Sensors.Flow.Val < _breathOutFlowThreshold
+func (io *IOMan) states(d *DataPacket, i *internalPacket) {
+	breathin := d.Sensors.Flow.Val > _breathInFlowThreshold
+	breathout := d.Sensors.Flow.Val < _breathOutFlowThreshold
 
-	var state enumState = StateRest
+
+	lastState := d.State
+	state := StateRest
 
 	if breathin {
 		state = StateBreathingIn
+		//logf("SPECIAL", "Breathing In %v", d.Sensors.Flow.Val)
 	}
 	if breathout {
 		state = StateBreathingOut
+		//logf("SPECIAL", "Breathing Out %v", d.Sensors.Flow.Val)
 	}
 	if breathin && breathout {
 		state = StateError
+		logf("ioman", "Breathing Error %v", d.Sensors.Flow.Val)
 	}
 
-	if state != i.i.lastState {
-		i.i.lastStateChange = i.d.Timestamp
+	if state != lastState {
+		i.lastStateChangeNmin1 = i.lastStateChangeN
+		i.lastStateChangeN = d.Timestamp
 	}
-
-	i.d.State = state
+	i.lastState = lastState
+	d.State = state
 }
 
-func (i *IOMan) calculate() {
+func (io *IOMan) calculate(d *DataPacket, i *internalPacket) {
+
+	calc := Calculated {
+
+	}
 
 	// If moving into breathing state, reset counters
-	if i.d.State == StateBreathingIn && i.i.lastState != StateBreathingIn {
-		i.i.flowAverageTotal = 0
-		i.i.flowAverageN = 0
+	if d.State == StateBreathingIn && i.lastState != StateBreathingIn {
+		i.flowAverageTotal = 0
+		i.flowAverageN = 0
 	}
 
 	// If in breathing state, increment counters
-	if i.d.State == StateBreathingIn {
-		i.i.flowAverageTotal += float64(i.d.Sensors.Flow.Val)
-		i.i.flowAverageN++
+	if d.State == StateBreathingIn {
+		i.flowAverageTotal += float64(d.Sensors.Flow.Val)
+		i.flowAverageN++
 	}
 
 	// If leaving breathing state, calculate integrated flow.
-	if i.d.State != StateBreathingIn && i.i.lastState == StateBreathingIn {
-		duration := i.d.Timestamp.Sub(i.i.lastStateChange)
-		flow := (i.i.flowAverageTotal / float64(i.i.flowAverageN)) * duration.Seconds()
+	if d.State != StateBreathingIn && i.lastState == StateBreathingIn && d.State != StateError {
+		duration := d.Timestamp.Sub(i.lastStateChangeNmin1)
+		flow := (i.flowAverageTotal / float64(i.flowAverageN)) * duration.Minutes()
 
-		i.d.Calculated.FlowIntegrated = flow
-		i.d.Calculated.FlowIntegratedTimestamp = i.i.lastStateChange
+		calc.FlowIntegrated = flow
+		calc.FlowIntegratedTimestamp = d.Timestamp
 	}
 
+	d.Calculated = calc
 }
 
 //GetDataPacket ..
-func (i *IOMan) GetDataPacket() DataPacket {
-	i.moutputs.Lock()
-	defer i.moutputs.Unlock()
-	return i.outputs
+func (io *IOMan) GetDataPacket() DataPacket {
+	io.moutputs.Lock()
+	defer io.moutputs.Unlock()
+	return io.o
 }
 
 //Destroy ..

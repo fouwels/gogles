@@ -18,3 +18,7 @@ run-local:
 
 build-local:
 	go build .
+
+debug:
+	go build -gcflags="-N -l" .
+	gdb ./gogles
