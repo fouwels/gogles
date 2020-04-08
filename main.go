@@ -107,7 +107,7 @@ func cli(ticker <-chan time.Time, ioman *ioman.IOMan) error {
 
 	for range ticker {
 		dp := ioman.GetDataPacket()
-		logf("cli", "\n\nHeader: %+v %+v \nFlow: %+v \nADC: %+v \nCalculated: %+v\n", dp.Valid, dp.Timestamp, dp.Sensors.Flow, dp.Sensors.ADC, dp.Calculated)
+		logf("cli", "\nHeader: %+v %+v \nFlow: %+v \nADC: %+v \nCalculated: %+v\n\n", dp.Valid, dp.Timestamp, dp.Sensors.Flow, dp.Sensors.ADC, dp.Calculated)
 	}
 
 	return fmt.Errorf("cli has exit unexpectedly")
