@@ -24,8 +24,8 @@ import (
 )
 
 const _width, _height = 800, 480
-const _glLoopTime = (1 * time.Second) / 60       // 60 Hz
-const _cliLoopTime = (1 * time.Second) / 1		// 1 Hz
+const _glLoopTime = (1 * time.Second) / 60 // 60 Hz
+const _cliLoopTime = (1 * time.Second) / 1 // 1 Hz
 
 var flagNoGui *bool
 
@@ -43,7 +43,7 @@ func init() {
 func main() {
 	err := start()
 	if err != nil {
-		log.Printf("%v", err)
+		logf("main", "%v", err)
 		os.Exit(1)
 	}
 }
@@ -107,7 +107,7 @@ func cli(ticker <-chan time.Time, ioman *ioman.IOMan) error {
 
 	for range ticker {
 		dp := ioman.GetDataPacket()
-		logf("cli", "\n%+v %+v \n%+v \n%+v", dp.Valid, dp.Timestamp, dp.Sensors, dp.Calculated)
+		logf("cli", "\n\nHeader: %+v %+v \nFlow: %+v \nADC: %+v \nCalculated: %+v\n", dp.Valid, dp.Timestamp, dp.Sensors.Flow, dp.Sensors.ADC, dp.Calculated)
 	}
 
 	return fmt.Errorf("cli has exit unexpectedly")
