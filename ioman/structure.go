@@ -15,6 +15,7 @@ type DataPacket struct {
 //Sensors ..
 type Sensors struct {
 	Flow Flow
+	ADC  ADC
 }
 
 //Flow ..
@@ -22,6 +23,12 @@ type Flow struct {
 	Val float32
 	CRC uint8
 	Err error
+}
+
+//ADC ..
+type ADC struct {
+	Vals []uint16
+	Err  error
 }
 
 //Calculated ..
@@ -66,9 +73,9 @@ type Stats struct {
 }
 
 type internalPacket struct {
-	lastState        enumState
-	lastStateChangeN  time.Time
-	lastStateChangeNmin1  time.Time
-	flowAverageTotal float64
-	flowAverageN     uint64
+	lastState            enumState
+	lastStateChangeN     time.Time
+	lastStateChangeNmin1 time.Time
+	flowAverageTotal     float64
+	flowAverageN         uint64
 }
