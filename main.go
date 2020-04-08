@@ -25,7 +25,7 @@ import (
 
 const _width, _height = 800, 480
 const _glLoopTime = (1 * time.Second) / 60       // 60 Hz
-const _processLoopTime = (1 * time.Second) / 120 // 120 Hz
+const _cliLoopTime = (1 * time.Second) / 1		// 1 Hz
 
 var flagNoGui *bool
 
@@ -72,26 +72,26 @@ func start() error {
 
 		err := graphics(gltick.C, ioman)
 		if err != nil {
-			return fmt.Errorf("glloop has exit: %w", err)
+			return fmt.Errorf("graphics has exit: %w", err)
 		}
 
 	} else {
 		logf("start", "Running in headless mode, handing over to cli at 1Hz")
 
-		cltick := time.NewTicker(1 * time.Second)
+		cltick := time.NewTicker(_cliLoopTime)
 		defer cltick.Stop()
 
 		err := cli(cltick.C, ioman)
 		if err != nil {
-			return fmt.Errorf("cliloop has exit: %w", err)
+			return fmt.Errorf("cli has exit: %w", err)
 		}
 	}
 
-	return fmt.Errorf("glLoop exit without error, this is unexpected")
+	return fmt.Errorf("graphics exit without error, this is unexpected")
 }
 
 func watchdog(ioman <-chan error) {
-	ticker := time.NewTicker(100 * time.Millisecond)
+	ticker := time.NewTicker(1000 * time.Millisecond)
 	defer ticker.Stop()
 
 	for range ticker.C {
@@ -107,7 +107,7 @@ func cli(ticker <-chan time.Time, ioman *ioman.IOMan) error {
 
 	for range ticker {
 		dp := ioman.GetDataPacket()
-		logf("cli", "%+v", dp)
+		logf("cli", "\n%+v %+v \n%+v \n%+v", dp.Valid, dp.Timestamp, dp.Sensors, dp.Calculated)
 	}
 
 	return fmt.Errorf("cli has exit unexpectedly")
