@@ -8,7 +8,7 @@ type DataPacket struct {
 	Timestamp  time.Time
 	Sensors    Sensors
 	Calculated Calculated
-	State      enumState
+	State      EnumState
 	Stats      Stats
 }
 
@@ -20,15 +20,17 @@ type Sensors struct {
 
 //Flow ..
 type Flow struct {
-	Val float32
-	CRC uint8
-	Err error
+	Val       float64
+	CRC       uint8
+	Err       error
+	Timestamp time.Time
 }
 
 //ADC ..
 type ADC struct {
-	Vals []uint16
-	Err  error
+	Vals      []uint16
+	Timestamp time.Time
+	Err       error
 }
 
 //Calculated ..
@@ -38,9 +40,9 @@ type Calculated struct {
 }
 
 //EnumState ..
-type enumState int
+type EnumState int
 
-func (e enumState) String() string {
+func (e EnumState) String() string {
 	switch int(e) {
 	case 0:
 		return "Error"
@@ -57,7 +59,7 @@ func (e enumState) String() string {
 
 const (
 	//StateError ..
-	StateError enumState = iota
+	StateError EnumState = iota
 	//StateBreathingIn ..
 	StateBreathingIn
 	//StateBreathingOut ..
@@ -70,12 +72,4 @@ const (
 type Stats struct {
 	OkReads     uint64
 	FailedReads uint64
-}
-
-type internalPacket struct {
-	lastState            enumState
-	lastStateChangeN     time.Time
-	lastStateChangeNmin1 time.Time
-	flowAverageTotal     float64
-	flowAverageN         uint64
 }
