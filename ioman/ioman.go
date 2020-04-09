@@ -195,6 +195,7 @@ func (io *IOMan) Start(cherr chan<- error) {
 		if d.Sensors.Flow.Err == nil && d.Sensors.ADC.Err == nil {
 			d.Stats.OkReads++
 
+			cont.buffers(sensors)
 			state := cont.states(sensors)
 			calculated := cont.calculate(sensors, state)
 
