@@ -85,7 +85,7 @@ func (c *controller) states(sensors Sensors) EnumState {
 	if newstate != c.state.state {
 		c.state.lastStateChange = c.state.stateChange
 		c.state.stateChange = sensors.Flow.Timestamp
-		logf("controller", "state changed from %v to %v", c.state.lastState, newstate)
+		logf("controller", "state changed from %v to %v. ADC1-0 = %v", c.state.lastState, newstate, sensors.ADC.Vals[0])
 	}
 
 	c.state.lastState = c.state.state
