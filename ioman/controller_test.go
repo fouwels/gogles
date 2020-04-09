@@ -7,14 +7,12 @@ import (
 	"strconv"
 	"testing"
 	"time"
-
-	"github.com/guptarohit/asciigraph"
 )
 
 var _cont *controller
 
 func TestMain(m *testing.M) {
-	_cont = newController()
+	_cont = newController(1000 * time.Millisecond)
 
 	result := m.Run()
 	os.Exit(result)
@@ -28,20 +26,15 @@ func TestStates(t *testing.T) {
 	}
 	t.Logf("Loaded %v flows", len(flows))
 
-	vals := []float64{}
 	for _, f := range flows {
 
 		sensors := Sensors{
 			Flow: f,
 		}
 
-		vals = append(vals, f.Val)
+		_cont.buffers(sensors)
 		_ = _cont.states(sensors)
 	}
-
-	graph := asciigraph.Plot(vals, asciigraph.Width(100), asciigraph.Height(10))
-
-	fmt.Println(graph)
 
 }
 

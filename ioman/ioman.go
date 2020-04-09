@@ -18,7 +18,7 @@ import (
 const _flow1Address = 0x40
 const _flow1IsAir = false
 const _i2cBus = "/dev/i2c-1"
-const _ioLoopTime = (1 * time.Second) / 1000 //1KHz
+const _sampleRate = (1 * time.Second) / 1000 //1KHz
 
 const _spiBus = "/dev/spidev0.1"
 const _spiSpeed = physic.Frequency(1 * physic.MegaHertz)
@@ -158,10 +158,10 @@ func (io *IOMan) selftest(sensors *phySensors) error {
 
 //Start ..
 func (io *IOMan) Start(cherr chan<- error) {
-	logf("ioman:start", "Starting at %v hz", 1/_ioLoopTime.Seconds())
-	lt := time.NewTicker(_ioLoopTime)
+	logf("ioman:start", "Starting at %v hz", 1/_sampleRate.Seconds())
+	lt := time.NewTicker(_sampleRate)
 	defer lt.Stop()
-	cont := newController()
+	cont := newController(_sampleRate)
 
 	for range lt.C {
 
