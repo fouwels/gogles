@@ -106,7 +106,7 @@ func watchdog(ioman <-chan error) {
 func cli(ticker <-chan time.Time, ioman *ioman.IOMan) error {
 
 	for range ticker {
-		dp := ioman.GetDataPacket()
+		//dp := ioman.GetDataPacket()
 		//logf("cli", "\nHeader: %+v %+v \nFlow: %+v \nADC: %+v \nCalculated: %+v\n\n", dp.Valid, dp.Timestamp, dp.Sensors.Flow, dp.Sensors.ADC, dp.Calculated)
 	}
 
