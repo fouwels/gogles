@@ -131,10 +131,10 @@ func (io *IOMan) selftest(sensors *phySensors) error {
 	time.Sleep(50 * time.Millisecond)
 
 	// Test GetValue
-	_, _, _ = sensors.Flow.GetValue() //First value is expected to be garbage
+	_, _, _, _ = sensors.Flow.GetValue() //First value is expected to be garbage
 	time.Sleep(50 * time.Millisecond)
 
-	value, crc, err := sensors.Flow.GetValue()
+	value, crc, _, err := sensors.Flow.GetValue()
 	if err != nil {
 		return fmt.Errorf("Failed to get %v value: %w", sensors.Flow.Label(), err)
 	}
@@ -144,10 +144,10 @@ func (io *IOMan) selftest(sensors *phySensors) error {
 	logf("ioman:selftest", "Testing %v", sensors.ADC.Label())
 
 	// Test GetValue
-	_, _ = sensors.ADC.GetValues(0, 4) //First value is expected to be garbage
+	_, _, _ = sensors.ADC.GetValues(0, 4) //First value is expected to be garbage
 	time.Sleep(50 * time.Millisecond)
 
-	vals, err := sensors.ADC.GetValues(0, 4)
+	vals, _, err := sensors.ADC.GetValues(0, 4)
 	if err != nil {
 		return fmt.Errorf("Failed to get %v values: %w", sensors.ADC.Label(), err)
 	}
@@ -161,39 +161,45 @@ func (io *IOMan) Start(cherr chan<- error) {
 	logf("ioman:start", "Starting at %v hz", 1/_ioLoopTime.Seconds())
 	lt := time.NewTicker(_ioLoopTime)
 	defer lt.Stop()
-
-	i := internalPacket{} //Internal data variables
+	cont := newController()
 
 	for range lt.C {
 
-		d := DataPacket{}
-
 		// Read inputs
-		fval, fcrc, ferr := io.sensors.Flow.GetValue()
+		fval, fcrc, tstamp, ferr := io.sensors.Flow.GetValue()
 		flow := Flow{
-			Val: fval,
-			CRC: fcrc,
-			Err: ferr,
+			Val:       fval,
+			CRC:       fcrc,
+			Timestamp: tstamp,
+			Err:       ferr,
 		}
 
-		ivals, ferr := io.sensors.ADC.GetValues(0, 4)
+		ivals, tstamp, ferr := io.sensors.ADC.GetValues(0, 4)
 		adc := ADC{
-			Vals: ivals,
-			Err:  ferr,
+			Vals:      ivals,
+			Err:       ferr,
+			Timestamp: tstamp,
 		}
 
-		d.Sensors = Sensors{
+		sensors := Sensors{
 			Flow: flow,
 			ADC:  adc,
 		}
-		d.Timestamp = time.Now()
+
+		d := DataPacket{
+			Sensors:   sensors,
+			Timestamp: time.Now(),
+		}
 
 		// If inputs read ok
 		if d.Sensors.Flow.Err == nil && d.Sensors.ADC.Err == nil {
 			d.Stats.OkReads++
 
-			io.states(&d, &i)
-			io.calculate(&d, &i)
+			state := cont.states(sensors)
+			calculated := cont.calculate(sensors, state)
+
+			d.State = state
+			d.Calculated = calculated
 			d.Valid = true
 
 		} else {
@@ -209,62 +215,6 @@ func (io *IOMan) Start(cherr chan<- error) {
 	}
 
 	cherr <- fmt.Errorf("io loop ended unexpectedly")
-}
-
-func (io *IOMan) states(d *DataPacket, i *internalPacket) {
-	breathin := d.Sensors.Flow.Val > _breathInFlowThreshold
-	breathout := d.Sensors.Flow.Val < _breathOutFlowThreshold
-
-	lastState := d.State
-	state := StateRest
-
-	if breathin {
-		state = StateBreathingIn
-		//logf("SPECIAL", "Breathing In %v", d.Sensors.Flow.Val)
-	}
-	if breathout {
-		state = StateBreathingOut
-		//logf("SPECIAL", "Breathing Out %v", d.Sensors.Flow.Val)
-	}
-	if breathin && breathout {
-		state = StateError
-		logf("ioman:states", "Breathing Error %v", d.Sensors.Flow.Val)
-	}
-
-	if state != lastState {
-		i.lastStateChangeNmin1 = i.lastStateChangeN
-		i.lastStateChangeN = d.Timestamp
-	}
-	i.lastState = lastState
-	d.State = state
-}
-
-func (io *IOMan) calculate(d *DataPacket, i *internalPacket) {
-
-	calc := Calculated{}
-
-	// If moving into breathing state, reset counters
-	if d.State == StateBreathingIn && i.lastState != StateBreathingIn {
-		i.flowAverageTotal = 0
-		i.flowAverageN = 0
-	}
-
-	// If in breathing state, increment counters
-	if d.State == StateBreathingIn {
-		i.flowAverageTotal += float64(d.Sensors.Flow.Val)
-		i.flowAverageN++
-	}
-
-	// If leaving breathing state, calculate integrated flow.
-	if d.State != StateBreathingIn && i.lastState == StateBreathingIn && d.State != StateError {
-		duration := d.Timestamp.Sub(i.lastStateChangeNmin1)
-		flow := (i.flowAverageTotal / float64(i.flowAverageN)) * duration.Minutes()
-
-		calc.FlowIntegrated = flow
-		calc.FlowIntegratedTimestamp = d.Timestamp
-	}
-
-	d.Calculated = calc
 }
 
 //GetDataPacket ..
