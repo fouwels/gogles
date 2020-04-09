@@ -5,110 +5,121 @@ import (
 	"time"
 )
 
-type controllerInternals struct {
-	lastState            EnumState
-	lastStateChangeN     time.Time
-	lastStateChangeNmin1 time.Time
-	flowAverageTotal     float64
-	flowAverageN         uint64
-	flowRing             *ring.Ring //N size circular buffer of previous flow measurements
+const _boxcarRatio float64 = 0.1 //division of of sample rate
+const _breathInFlowThreshold = 5
+const _breathOutFlowThreshold = 0
+
+type calcStore struct {
+	flowAverageTotal float64
+	flowAverageN     uint64
+}
+
+type bufferStore struct {
+	flowMovingAverage float64
+	flowRing          *ring.Ring //N size circular buffer of previous flow measurements
+}
+type stateStore struct {
+	state           EnumState
+	stateChange     time.Time
+	lastState       EnumState //state n-1
+	lastStateChange time.Time
 }
 
 type controller struct {
-	i           controllerInternals
+	state       stateStore
+	buffer      bufferStore
+	calc        calcStore
 	sampledRate time.Duration
 }
 
 func newController(sampledRate time.Duration) *controller {
 
-	flowRing := ring.New(1000)
-	for i := 0; i < flowRing.Len(); i++ {
-		val := flowRing.Move(1)
-		val = float64(0)
+	blen := int(1/sampledRate.Seconds()) * 1
+	logf("controller", "Creating a new buffer of len %v", blen)
+
+	fr := ring.New(blen)
+	for i := 0; i < fr.Len()+1; i++ {
+		fr.Value = float64(0)
+		fr = fr.Next()
 	}
-
-	flowRing.Do(func(i interface{}) {
-		v := i.(float64)
-		logf("SPECIAL", "%v", v)
-	})
-
 	return &controller{
-		i: controllerInternals{
-			flowRing: flowRing,
+
+		buffer: bufferStore{
+			flowRing: fr,
 		},
+
 		sampledRate: sampledRate,
 	}
 }
 
-func (c *controller) DumpFlowRing() {
-	
-}
-
 var counter int = 0
 
-func (c *controller) buffers(sensors Sensors) {
-	c.i.flowRing.Move(1) //N = N+1
-	c.i.flowRing.Value = sensors.Flow.Val
+var ticks int = 0
 
-	counter++
-	if counter > 3000 {
-		c.DumpFlowRing()
-		counter = 0
+func (c *controller) buffers(sensors Sensors) {
+	c.buffer.flowRing = c.buffer.flowRing.Next()
+	c.buffer.flowRing.Value = float64(sensors.Flow.Val)
+
+	//Calculate current trailing moving average
+	boxcar := int(1 / (c.sampledRate.Seconds()) * _boxcarRatio) //Calculate boxcar width as ratio _boxcarRatio of sample rate
+	sum := float64(0)
+
+	c.buffer.flowRing = c.buffer.flowRing.Move(-(boxcar)) //Index to [N - boxcar]
+	for s := 0; s < boxcar; s++ {                         //Advance from [N - boxcar] to N
+		val := c.buffer.flowRing.Value.(float64)
+		sum = sum + val
+		c.buffer.flowRing = c.buffer.flowRing.Next()
 	}
+
+	c.buffer.flowMovingAverage = sum / float64(boxcar)
 }
 
 func (c *controller) states(sensors Sensors) EnumState {
-	breathin := sensors.Flow.Val > _breathInFlowThreshold
-	breathout := sensors.Flow.Val < _breathOutFlowThreshold
 
-	state := StateRest
-	lastState := c.i.lastState
+	newstate := StateRest
 
-	if breathin {
-		state = StateBreathingIn
-		//logf("SPECIAL", "Breathing In %v", sensors.Flow.Val)
-	}
-	if breathout {
-		state = StateBreathingOut
-		//logf("SPECIAL", "Breathing Out %v", sensors.Flow.Val)
-	}
-	if breathin && breathout {
-		state = StateError
-		logf("ioman:states", "Breathing Error %v", sensors.Flow.Val)
+	if c.buffer.flowMovingAverage > _breathInFlowThreshold {
+		newstate = StateBreathingIn
 	}
 
-	if state != lastState {
-		c.i.lastStateChangeNmin1 = c.i.lastStateChangeN
-		c.i.lastStateChangeN = sensors.Flow.Timestamp
+	if newstate != c.state.state {
+		c.state.lastStateChange = c.state.stateChange
+		c.state.stateChange = sensors.Flow.Timestamp
+		logf("controller", "state changed from %v to %v", c.state.lastState, newstate)
 	}
-	c.i.lastState = state
 
-	return state
+	c.state.lastState = c.state.state
+	c.state.state = newstate
+
+	return newstate
 }
 
-func (c *controller) calculate(sensors Sensors, state EnumState) Calculated {
+func (c *controller) calculate(sensors Sensors) Calculated {
 
 	calc := Calculated{}
 
 	// If moving into breathing state, reset counters
-	if state == StateBreathingIn && c.i.lastState != StateBreathingIn {
-		c.i.flowAverageTotal = 0
-		c.i.flowAverageN = 0
+	if c.state.state == StateBreathingIn && c.state.lastState != StateBreathingIn {
+		c.calc.flowAverageTotal = 0
+		c.calc.flowAverageN = 0
 	}
 
 	// If in breathing state, increment counters
-	if state == StateBreathingIn {
-		c.i.flowAverageTotal += float64(sensors.Flow.Val)
-		c.i.flowAverageN++
+	if c.state.state == StateBreathingIn {
+		c.calc.flowAverageTotal += float64(sensors.Flow.Val)
+		c.calc.flowAverageN++
 	}
 
 	// If leaving breathing state, calculate integrated flow.
-	if state != StateBreathingIn && c.i.lastState == StateBreathingIn && state != StateError {
-		duration := sensors.Flow.Timestamp.Sub(c.i.lastStateChangeNmin1)
-		flow := (c.i.flowAverageTotal / float64(c.i.flowAverageN)) * duration.Minutes()
+	if c.state.state == StateRest && c.state.lastState == StateBreathingIn {
+		duration := c.state.stateChange.Sub(c.state.lastStateChange)
+
+		flow := (c.calc.flowAverageTotal / float64(c.calc.flowAverageN)) * duration.Minutes()
 
 		calc.FlowIntegrated = flow
-		calc.FlowIntegratedTimestamp = sensors.Flow.Timestamp
+		calc.FlowIntegratedTimestamp = c.state.stateChange
+
+		logf("controller", "breath calculated as %v liters at %v ", calc.FlowIntegrated, calc.FlowIntegratedTimestamp)
 	}
 
 	return calc

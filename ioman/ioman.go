@@ -24,9 +24,6 @@ const _spiBus = "/dev/spidev0.1"
 const _spiSpeed = physic.Frequency(1 * physic.MegaHertz)
 const _adc1ChipSelect = 1
 
-const _breathInFlowThreshold = 20
-const _breathOutFlowThreshold = -20
-
 //IOMan ..
 type IOMan struct {
 	sensors  *phySensors
@@ -197,7 +194,7 @@ func (io *IOMan) Start(cherr chan<- error) {
 
 			cont.buffers(sensors)
 			state := cont.states(sensors)
-			calculated := cont.calculate(sensors, state)
+			calculated := cont.calculate(sensors)
 
 			d.State = state
 			d.Calculated = calculated
