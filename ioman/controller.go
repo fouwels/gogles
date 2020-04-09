@@ -23,9 +23,14 @@ func newController(sampledRate time.Duration) *controller {
 
 	flowRing := ring.New(1000)
 	for i := 0; i < flowRing.Len(); i++ {
-		flowRing.Value = float64(0)
-		flowRing.Move(1)
+		val := flowRing.Move(1)
+		val = float64(0)
 	}
+
+	flowRing.Do(func(i interface{}) {
+		v := i.(float64)
+		logf("SPECIAL", "%v", v)
+	})
 
 	return &controller{
 		i: controllerInternals{
@@ -36,10 +41,7 @@ func newController(sampledRate time.Duration) *controller {
 }
 
 func (c *controller) DumpFlowRing() {
-	c.i.flowRing.Do(func(i interface{}) {
-		v := i.(float64)
-		logf("SPECIAL", "%v", v)
-	})
+	
 }
 
 var counter int = 0
