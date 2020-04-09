@@ -9,10 +9,12 @@ import (
 	"time"
 )
 
+const _testSampleRate = (1 * time.Second) / 1000
+
 var _cont *controller
 
 func TestMain(m *testing.M) {
-	_cont = newController(1000 * time.Millisecond)
+	_cont = newController(_testSampleRate)
 
 	result := m.Run()
 	os.Exit(result)
@@ -32,14 +34,16 @@ func TestStates(t *testing.T) {
 			Flow: f,
 		}
 
+		time.Sleep(_testSampleRate)
 		_cont.buffers(sensors)
-		_ = _cont.states(sensors)
+		_cont.states(sensors)
+		_cont.calculate(sensors)
 	}
 
 }
 
 func loadDebug() ([]Flow, error) {
-	datafile := "../../iodrivers/i2c/sfm3000/capture_datalog.csv"
+	datafile := "../../iodrivers/i2c/sfm3000/capture_datalog_2.csv"
 
 	f, err := os.Open(datafile)
 	defer f.Close()

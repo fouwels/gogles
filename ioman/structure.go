@@ -49,8 +49,6 @@ func (e EnumState) String() string {
 	case 1:
 		return "Breathing In"
 	case 2:
-		return "Breathing Out"
-	case 3:
 		return "Rest"
 	default:
 		return "Enum Error"
@@ -62,8 +60,6 @@ const (
 	StateError EnumState = iota
 	//StateBreathingIn ..
 	StateBreathingIn
-	//StateBreathingOut ..
-	StateBreathingOut
 	//StateRest ..
 	StateRest
 )
