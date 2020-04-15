@@ -6,23 +6,27 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kaelanfouwels/iodrivers/i2c"
+	"periph.io/x/periph/conn/i2c"
+	"periph.io/x/periph/conn/i2c/i2creg"
+
 	"github.com/kaelanfouwels/iodrivers/i2c/sfm3000"
 	"github.com/kaelanfouwels/iodrivers/spi/mcp3208"
+	"github.com/kaelanfouwels/iodrivers/spi/mcp4921"
 	"periph.io/x/periph/conn/physic"
 	"periph.io/x/periph/conn/spi"
 	"periph.io/x/periph/conn/spi/spireg"
 	"periph.io/x/periph/host"
 )
 
+const _sampleRate = (1 * time.Second) / 1000 //1KHz
+
 const _flow1Address = 0x40
 const _flow1IsAir = false
 const _i2cBus = "/dev/i2c-1"
-const _sampleRate = (1 * time.Second) / 1000 //1KHz
 
-const _spiBus = "/dev/spidev0.1"
+const _adcSpiBus = "/dev/spidev0.1"
+const _dacSpiBus = "/dev/spidev0.0"
 const _spiSpeed = physic.Frequency(1 * physic.MegaHertz)
-const _adc1ChipSelect = 1
 
 //IOMan ..
 type IOMan struct {
@@ -34,6 +38,7 @@ type IOMan struct {
 type phySensors struct {
 	Flow *sfm3000.SFM3000
 	ADC  *mcp3208.Mcp3208
+	DAC  *mcp4921.Mcp4921
 }
 
 //NewIOMan ..
@@ -65,71 +70,92 @@ func (io *IOMan) initialize() (*phySensors, error) {
 	logf("ioman:initialize", "Initializing host")
 	_, err := host.Init()
 	if err != nil {
-		log.Fatalf("Failed to initialize periph.io host: %v", err)
+		return nil, fmt.Errorf("Failed to initialize periph.io host: %v", err)
 	}
 
 	//Initialize I2C
 	logf("ioman:initialize", "Initializing I2C on bus %v", _i2cBus)
-	i21, err := i2c.NewI2C(_i2cBus)
+	i2cbus, err := i2creg.Open(_i2cBus)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create I2C device: %w", err)
+	}
+	//Initialize SPI1
+	logf("ioman:initialize", "Initializing SPI on bus %v at %v ", _adcSpiBus, _spiSpeed)
+	s1bus, err := spireg.Open(_adcSpiBus)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to open SPI bus %v: %v", _adcSpiBus, err)
+	}
+
+	conn1, err := s1bus.Connect(_spiSpeed, spi.Mode0, 8)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to connect SPI: %v", err)
+	}
+
+	//Initialize SPI2
+	logf("ioman:initialize", "Initializing SPI on bus %v at %v ", _dacSpiBus, _spiSpeed)
+	s2bus, err := spireg.Open(_dacSpiBus)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to open SPI bus %v: %v", _adcSpiBus, err)
+	}
+
+	conn2, err := s2bus.Connect(_spiSpeed, spi.Mode0, 8)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to connect SPI: %v", err)
 	}
 
 	//Initialize SFM3000
 	logf("ioman:initialize", "Initializing SFM3000 on I2C bus %v 0x%x as %v", _i2cBus, _flow1Address, "FLOW1")
-	flow1, err := sfm3000.NewSFM3000(i21, _flow1Address, _flow1IsAir, "FLOW1")
+
+	dev := i2c.Dev{
+		Bus:  i2cbus,
+		Addr: _flow1Address,
+	}
+
+	flow1, err := sfm3000.NewSFM3000(&dev, _flow1Address, _flow1IsAir, "FLOW1")
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create SFM3000: %w", err)
 	}
 
-	//Initialize SPI
-	logf("ioman:initialize", "Initializing SPI on bus %v at %v ", _spiBus, _spiSpeed)
-	s, err := spireg.Open(_spiBus)
+	//Initialize MCP3208
+	logf("ioman:initialize", "Initializing MCP3208 on SPI bus %v as %v", _adcSpiBus, "ADC1")
+	adc1, err := mcp3208.NewMcp3208(conn1, "ADC1")
 	if err != nil {
-		log.Fatalf("Failed to open SPI bus %v: %v", _spiBus, err)
-	}
-	conn, err := s.Connect(_spiSpeed, spi.Mode0, 8)
-	if err != nil {
-		log.Fatalf("Failed to connect SPI: %v", err)
+		return nil, fmt.Errorf("Failed to create MCP3208: %v", err)
 	}
 
-	//Initialize MCP3208
-	logf("ioman:initialize", "Initializing MCP3208 on SPI bus %v CS %v as %v", _spiBus, _adc1ChipSelect, "ADC1")
-	adc1, err := mcp3208.NewMcp3208(conn, "ADC1")
+	//Initialize MCP4921
+	logf("ioman:initialize", "Initializing MCP4921 on SPI bus %v as %v", _dacSpiBus, "DAC1")
+	dac1, err := mcp4921.NewMcp4921(conn2, "DAC1", mcp4921.EnumBufferedTrue, mcp4921.EnumOutputGain1x, mcp4921.EnumShutdownModeActive)
 	if err != nil {
-		log.Fatalf("Failed to create MCP3208: %v", err)
+		log.Fatalf("Failed to create MCP4921: %v", err)
 	}
 
 	return &phySensors{
 		Flow: flow1,
 		ADC:  adc1,
+		DAC:  dac1,
 	}, nil
 }
 
 func (io *IOMan) selftest(sensors *phySensors) error {
 
-	// Test SFM3000
-
-	// Test Reset
+	//Test SFM3000
 	logf("ioman:selftest", "Testing %v", sensors.Flow.Label())
+
 	err := sensors.Flow.SoftReset()
 	if err != nil {
 		return fmt.Errorf("Failed to soft reset %v: %w", sensors.Flow.Label(), err)
 	}
 	logf("ioman:selftest", "%v soft-reset OK", sensors.Flow.Label())
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond) // Wait for sensor to reset
 
-	// Test GetSerial
 	serial, err := sensors.Flow.GetSerial()
 	if err != nil {
 		return fmt.Errorf("Failed to get %v serial number: %w", sensors.Flow.Label(), err)
 	}
 	logf("ioman:selftest", "%v serial number OK: %v", sensors.Flow.Label(), serial)
-	time.Sleep(50 * time.Millisecond)
 
-	// Test GetValue
 	_, _, _, _ = sensors.Flow.GetValue() //First value is expected to be garbage
-	time.Sleep(50 * time.Millisecond)
 
 	value, crc, _, err := sensors.Flow.GetValue()
 	if err != nil {
@@ -140,7 +166,6 @@ func (io *IOMan) selftest(sensors *phySensors) error {
 	//Test MCP3208
 	logf("ioman:selftest", "Testing %v", sensors.ADC.Label())
 
-	// Test GetValue
 	_, _, _ = sensors.ADC.GetValues(0, 4) //First value is expected to be garbage
 	time.Sleep(50 * time.Millisecond)
 
@@ -150,6 +175,12 @@ func (io *IOMan) selftest(sensors *phySensors) error {
 	}
 	logf("ioman:selftest", "%v adc values OK: %v ", sensors.ADC.Label(), vals)
 
+	//Test MCP4921
+	logf("ioman:selftest", "Testing %v", sensors.DAC.Label())
+	err = sensors.DAC.Write(0) //Write closed
+	if err != nil {
+		return fmt.Errorf("Failed to write %v to %v", 0, sensors.DAC.Label())
+	}
 	return nil
 }
 
