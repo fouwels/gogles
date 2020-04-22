@@ -13,8 +13,7 @@ import (
 	"github.com/kaelanfouwels/gogles/fontman"
 	"github.com/kaelanfouwels/gogles/textman"
 
-	//"github.com/go-gl/glfw/v3.3/glfw"
-	"github.com/kaelanfouwels/gogles/glfw/v3.3/glfw"
+	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/kaelanfouwels/gogles/glow/gl"
 
 	//gl "github.com/kaelanfouwels/gogles/glow/gles"
@@ -150,13 +149,22 @@ func graphics(ticker <-chan time.Time, ioman *ioman.IOMan) error {
 	}
 
 	logf("graphics", "Initializing mdfman")
-	mfdman, err := mfdman.NewMFDman(_width, _height, fontman)
+	mfdman1, err := mfdman.NewMFDman(_width, _height, fontman)
 	if err != nil {
 		return err
 	}
 
+	mfdman1.SetText(mfdman.L1, "L1", "NONE")
+	mfdman1.SetText(mfdman.L2, "L2", "NONE")
+	mfdman1.SetText(mfdman.L3, "L3", "NONE")
+	mfdman1.SetText(mfdman.L4, "L4", "NONE")
+	mfdman1.SetText(mfdman.R1, "R1", "NONE")
+	mfdman1.SetText(mfdman.R2, "R2", "NONE")
+	mfdman1.SetText(mfdman.R3, "R3", "NONE")
+	mfdman1.SetText(mfdman.R4, "R4", "NONE")
+
 	logf("graphics", "Initializing renderman")
-	renderman, err := renderman.NewRenderman(_width, _height, textman, fontman, mfdman, ioman)
+	renderman, err := renderman.NewRenderman(_width, _height, textman, fontman, mfdman1, ioman)
 	if err != nil {
 		return err
 	}

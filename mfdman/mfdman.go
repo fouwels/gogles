@@ -10,7 +10,7 @@ type MFDIndex int
 
 const mfdWidth float32 = 80
 const mfdHeight float32 = 80
-const mfdYOffset float32 = 60
+const mfdYOffset float32 = 32
 const mfdXOffset float32 = 20
 
 const (
