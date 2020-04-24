@@ -25,7 +25,6 @@ const _glLoopTime = (1 * time.Second) / 60 // 60 Hz
 const _cliLoopTime = (1 * time.Second) / 1 // 1 Hz
 
 var flagNoGui *bool
-var flagNoIo *bool
 
 func init() {
 	//GLFW event handling must run on the main OS thread
@@ -35,7 +34,6 @@ func init() {
 	//Commandline Flags
 	logf("init", "Parsing Flags")
 	flagNoGui = flag.Bool("no-gui", false, "run application in headless (no GUI) mode")
-	flagNoIo = flag.Bool("no-io", false, "run application GUI only and disable IO/Control")
 	flag.Parse()
 }
 
@@ -49,23 +47,19 @@ func main() {
 
 func start() error {
 
-	if !flagNoIo {
-		logf("start", "Initializing ioman")
-		ioman, err := ioman.NewIOMan()
-		if err != nil {
-			return err
-		}
-		defer ioman.Destroy()
-
-		chioerr := make(chan error)
-		logf("start", "Starting watchdog goroutine")
-		go watchdog(chioerr)
-
-		logf("start", "Starting ioman goroutine")
-		go ioman.Start(chioerr)
-	} else {
-		ioman := ioman.Ioman{}
+	logf("start", "Initializing ioman")
+	ioman, err := ioman.NewIOMan()
+	if err != nil {
+		return err
 	}
+	defer ioman.Destroy()
+
+	chioerr := make(chan error)
+	logf("start", "Starting watchdog goroutine")
+	go watchdog(chioerr)
+
+	logf("start", "Starting ioman goroutine")
+	go ioman.Start(chioerr)
 
 	if !*flagNoGui {
 
