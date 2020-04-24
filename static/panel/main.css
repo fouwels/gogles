@@ -3,6 +3,11 @@
     --width: 800;
 }
 
+p {
+    margin: 0px;
+    padding: 0px;
+}
+
 html {
     background-color: lightgrey;
     color: black;
@@ -18,22 +23,40 @@ body {
 
 .button_mfd {
     width: 120px;
-    height: 80px;
+    height: 100px;
     color: white;
     background-color: black;
     border-color: white;
     border-style: solid;
 }
 
-#ticker {
-    position: absolute;
-    bottom: 6px;
-    left: 10px;
-    font-size: 12px;
-}
-
 .button_mfd:active {
     background-color: white;
+}
+
+#panel_debug {
+    position: absolute;
+    left: 150px;
+    top: 10px;
+    width: 500px;
+    height: 456px;
+    background-color: transparent;
+    border-color: white;
+    border-style: solid;
+    border-width: 2px;
+}
+
+#api_response {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+}
+
+#ticker {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    font-size: 12px;
 }
 
 #viewport {
@@ -47,48 +70,48 @@ body {
 
 #button_mfd_l1 {
     position: absolute;
-    top: 32px;
+    top: 10px;
     left: 10px;
 }
 
 #button_mfd_l2 {
     position: absolute;
-    top: 144px;
+    top: 130px;
     left: 10px;
 }
 
 #button_mfd_l3 {
     position: absolute;
-    bottom: 144px;
+    bottom: 130px;
     left: 10px;
 }
 
 #button_mfd_l4 {
     position: absolute;
-    bottom: 32px;
+    bottom: 10px;
     left: 10px;
 }
 
 #button_mfd_r1 {
     position: absolute;
-    top: 32px;
+    top: 10px;
     right: 10px;
 }
 
 #button_mfd_r2 {
     position: absolute;
-    top: 144px;
+    top: 130px;
     right: 10px;
 }
 
 #button_mfd_r3 {
     position: absolute;
-    bottom: 144px;
+    bottom: 130px;
     right: 10px;
 }
 
 #button_mfd_r4 {
     position: absolute;
-    bottom: 32px;
+    bottom: 10px;
     right: 10px;
 }
