@@ -12,7 +12,6 @@ import (
 	"flag"
 )
 
-const _width, _height = 800, 480
 const _glLoopTime = (1 * time.Second) / 60 // 60 Hz
 const _cliLoopTime = (1 * time.Second) / 1 // 1 Hz
 

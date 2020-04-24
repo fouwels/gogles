@@ -1,0 +1,87 @@
+:root {
+    --height: 480;
+    --width: 800;
+}
+
+html {
+    background-color: lightgrey;
+    color: black;
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0px;
+    padding: 0px;
+}
+
+body {
+    margin: 0px;
+    padding: 0px;
+}
+
+.button_mfd {
+    width: 120px;
+    height: 80px;
+    color: white;
+    background-color: black;
+    border-color: white;
+    border-style: solid;
+}
+
+.button_mfd:active {
+    background-color: white;
+}
+
+#viewport {
+    position: fixed;
+    margin: 0px;
+    width: var(--width)px;
+    height: var(--height)px;
+    background-color: black;
+    color: white;
+}
+
+#button_mfd_l1 {
+    position: absolute;
+    top: 32px;
+    left: 10px;
+}
+
+#button_mfd_l2 {
+    position: absolute;
+    top: 144px;
+    left: 10px;
+}
+
+#button_mfd_l3 {
+    position: absolute;
+    bottom: 144px;
+    left: 10px;
+}
+
+#button_mfd_l4 {
+    position: absolute;
+    bottom: 32px;
+    left: 10px;
+}
+
+#button_mfd_r1 {
+    position: absolute;
+    top: 32px;
+    right: 10px;
+}
+
+#button_mfd_r2 {
+    position: absolute;
+    top: 144px;
+    right: 10px;
+}
+
+#button_mfd_r3 {
+    position: absolute;
+    bottom: 144px;
+    right: 10px;
+}
+
+#button_mfd_r4 {
+    position: absolute;
+    bottom: 32px;
+    right: 10px;
+}
