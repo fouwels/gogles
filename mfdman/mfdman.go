@@ -1,9 +1,6 @@
 package mfdman
 
-import (
-	"github.com/kaelanfouwels/gogles/fontman"
-	"github.com/kaelanfouwels/gogles/glow/gl"
-)
+import "github.com/fogleman/gg"
 
 //MFDIndex defines an MFD index
 type MFDIndex int
@@ -45,19 +42,19 @@ type mfd struct {
 
 //MFDman ..
 type MFDman struct {
-	width   float32
-	height  float32
-	mfds    [MFDCount]mfd
-	fontman *fontman.Fontman
+	width  float32
+	height float32
+	mfds   [MFDCount]mfd
+	gc     *gg.Context
 }
 
 //NewMFDman ..
-func NewMFDman(width float32, height float32, fontman *fontman.Fontman) (*MFDman, error) {
+func NewMFDman(gc *gg.Context, width float32, height float32) (*MFDman, error) {
 
 	mfdm := MFDman{
-		width:   width,
-		height:  height,
-		fontman: fontman,
+		gc:     gc,
+		width:  width,
+		height: height,
 	}
 
 	ycursor := -height/2 + mfdYOffset
@@ -103,48 +100,48 @@ func (m *MFDman) drawOne(mfd mfd) error {
 	if mfd.textA == "" && mfd.textB == "" {
 		return nil
 	}
-	gl.MatrixMode(gl.TEXTURE)
-	gl.LoadIdentity()
-	gl.MatrixMode(gl.MODELVIEW)
-	gl.LoadIdentity()
-	gl.Disable(gl.TEXTURE_2D)
+	// gl.MatrixMode(gl.TEXTURE)
+	// gl.LoadIdentity()
+	// gl.MatrixMode(gl.MODELVIEW)
+	// gl.LoadIdentity()
+	// gl.Disable(gl.TEXTURE_2D)
 
-	// Draw MFD box
-	gl.LineWidth(3)
-	if !mfd.selected {
-		gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
-	} else {
-		gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
-	}
+	// // Draw MFD box
+	// gl.LineWidth(3)
+	// if !mfd.selected {
+	// 	gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+	// } else {
+	// 	gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
+	// }
 
-	gl.Begin(gl.QUADS)
+	// gl.Begin(gl.QUADS)
 
-	//0,0
-	gl.Vertex2f(mfd.x, mfd.y)
+	// //0,0
+	// gl.Vertex2f(mfd.x, mfd.y)
 
-	//0,1
-	gl.Vertex2f(mfd.x, mfd.y+mfdHeight)
+	// //0,1
+	// gl.Vertex2f(mfd.x, mfd.y+mfdHeight)
 
-	//1,1
-	gl.Vertex2f(mfd.x+mfdWidth, mfd.y+mfdHeight)
+	// //1,1
+	// gl.Vertex2f(mfd.x+mfdWidth, mfd.y+mfdHeight)
 
-	//1,0
-	gl.Vertex2f(mfd.x+mfdWidth, mfd.y)
-	gl.End()
+	// //1,0
+	// gl.Vertex2f(mfd.x+mfdWidth, mfd.y)
+	// gl.End()
 
-	// Draw MFD legend
-	ycursor := mfd.y + mfdHeight - 10
-	ycursor -= 20
-	err := m.fontman.RenderString(mfd.textA, mfd.x+10, ycursor, 0.20)
-	if err != nil {
-		return err
-	}
-	ycursor -= 15
-	ycursor -= 20
-	err = m.fontman.RenderString(mfd.textB, mfd.x+10, ycursor, 0.20)
-	if err != nil {
-		return err
-	}
+	// // Draw MFD legend
+	// ycursor := mfd.y + mfdHeight - 10
+	// ycursor -= 20
+	// err := m.fontman.RenderString(mfd.textA, mfd.x+10, ycursor, 0.20)
+	// if err != nil {
+	// 	return err
+	// }
+	// ycursor -= 15
+	// ycursor -= 20
+	// err = m.fontman.RenderString(mfd.textB, mfd.x+10, ycursor, 0.20)
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
