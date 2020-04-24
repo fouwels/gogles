@@ -3,7 +3,7 @@ BUILDFILE=build.yml
 DOCKER=docker
 
 #Docker
-build: Dockerfile install
+build: Dockerfile
 	$(COMPOSE) -f $(BUILDFILE) build
 push:
 	$(COMPOSE) -f $(BUILDFILE) push
