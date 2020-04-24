@@ -25,6 +25,13 @@ body {
     border-style: solid;
 }
 
+#ticker {
+    position: absolute;
+    bottom: 6px;
+    left: 10px;
+    font-size: 12px;
+}
+
 .button_mfd:active {
     background-color: white;
 }
