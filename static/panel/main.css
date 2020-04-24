@@ -1,8 +1,3 @@
-:root {
-    --height: 480;
-    --width: 800;
-}
-
 p {
     margin: 0px;
     padding: 0px;
@@ -62,8 +57,8 @@ body {
 #viewport {
     position: fixed;
     margin: 0px;
-    width: var(--width)px;
-    height: var(--height)px;
+    width: 800px;
+    height: 480px;
     background-color: black;
     color: white;
 }
