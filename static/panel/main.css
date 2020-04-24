@@ -23,7 +23,7 @@ body {
 
 .button_mfd {
     width: 120px;
-    height: 100px;
+    height: 90px;
     color: white;
     background-color: black;
     border-color: white;
@@ -76,13 +76,13 @@ body {
 
 #button_mfd_l2 {
     position: absolute;
-    top: 130px;
+    top: 133px;
     left: 10px;
 }
 
 #button_mfd_l3 {
     position: absolute;
-    bottom: 130px;
+    bottom: 133px;
     left: 10px;
 }
 
@@ -100,13 +100,13 @@ body {
 
 #button_mfd_r2 {
     position: absolute;
-    top: 130px;
+    top: 133px;
     right: 10px;
 }
 
 #button_mfd_r3 {
     position: absolute;
-    bottom: 130px;
+    bottom: 133px;
     right: 10px;
 }
 
