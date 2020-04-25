@@ -1,8 +1,14 @@
 version: "2"
 services:
     gogles:
-        image: gogles:dev
+        restart: unless-stopped
+        image: github.com/kaelanfouwels/gogles:dev
         container_name: gogles
         build:
             dockerfile: Dockerfile
             context: "./"
+        ports:
+            - "8080:8080"
+        volumes:
+            - "/dev:/dev"
+        privileged: true
